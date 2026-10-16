@@ -36,3 +36,4 @@ models:
     marts: { +materialized: table, +schema: marts}
     snapshot: 
       zomato_project: { +materialized: snapshot, +schema: snapshot}
+      
