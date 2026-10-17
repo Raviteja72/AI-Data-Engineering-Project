@@ -1,0 +1,45 @@
+name: Deploy on Main Merge
+
+on:
+  pull_request:
+    branches: [main]
+    types: [closed]
+
+permissions:
+  contents: read
+
+jobs:
+  deploy:
+    if: github.event.pull_request.merged == true && github.event.pull_request.base.ref == 'main'
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout merged commit
+        uses: actions/checkout@v4
+        with:
+          ref: ${{ github.event.pull_request.merge_commit_sha }}
+
+      - name: Set up Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: "3.11"
+
+      - name: Install dependencies
+        run: |
+          python -m pip install --upgrade pip
+          if [ -f requirements.txt ]; then pip install -r requirements.txt; fi
+          pip install pytest
+
+      - name: Validate Python syntax
+        run: python -m compileall -q ai Airflow/Dags
+
+      - name: Run tests if present
+        run: |
+          if [ -d tests ] || compgen -G "test*.py" > /dev/null; then
+            pytest -q
+          else
+            echo "No Python tests found; skipping pytest."
+          fi
+
+      - name: Deployment placeholder
+        run: echo "Checks passed. Configure the deployment command and required secrets for your target environment."

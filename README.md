@@ -109,6 +109,19 @@ Main DAG details:
   - `reload_raw` → loads raw data into Snowflake
   - `dbt_build_core` → runs the dbt project to create staging and marts
 
+## GitHub Actions
+
+Workflows are stored under `.github/workflows/`:
+
+- `preview.yaml` runs Black, Flake8, Python compilation, and available pytest tests
+  when a pull request targeting `main` is opened or updated.
+- `deploy.yaml` runs Python compilation and available pytest tests after a pull
+  request is merged into `main`. Its deployment step is a placeholder until a
+  deployment target and credentials are configured.
+
+To block merges when preview checks fail, configure the corresponding GitHub
+Actions job as a required status check in the repository's branch protection rules.
+
 ## dbt Project
 
 The dbt project is configured in `zomato_project/dbt_project.yml`.
