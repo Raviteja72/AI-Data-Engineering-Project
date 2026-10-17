@@ -1,4 +1,4 @@
-name: Deploy on Main Merge
+name: Package After Main Merge
 
 on:
   pull_request:
@@ -9,7 +9,7 @@ permissions:
   contents: read
 
 jobs:
-  deploy:
+  package:
     if: github.event.pull_request.merged == true && github.event.pull_request.base.ref == 'main'
     runs-on: ubuntu-latest
 
@@ -19,27 +19,30 @@ jobs:
         with:
           ref: ${{ github.event.pull_request.merge_commit_sha }}
 
-      - name: Set up Python
-        uses: actions/setup-python@v5
+      - name: Create deployment bundle
+        run: |
+          tar \
+            --exclude='*/.env' \
+            --exclude='*/logs' \
+            --exclude='*/target' \
+            --exclude='*/dbt_packages' \
+            --exclude='*/__pycache__' \
+            -czf deployment-bundle.tar.gz \
+            Airflow/Dags Airflow/Dockerfile Airflow/docker-compose.yaml ai zomato_project
+
+      - name: Upload deployment bundle
+        uses: actions/upload-artifact@v4
         with:
-          python-version: "3.11"
+          name: deployment-bundle-${{ github.event.pull_request.number }}
+          path: deployment-bundle.tar.gz
+          if-no-files-found: error
+          retention-days: 14
 
-      - name: Install dependencies
+      - name: Report deployment status
         run: |
-          python -m pip install --upgrade pip
-          if [ -f requirements.txt ]; then pip install -r requirements.txt; fi
-          pip install pytest
-
-      - name: Validate Python syntax
-        run: python -m compileall -q ai Airflow/Dags
-
-      - name: Run tests if present
-        run: |
-          if [ -d tests ] || compgen -G "test*.py" > /dev/null; then
-            pytest -q
-          else
-            echo "No Python tests found; skipping pytest."
-          fi
-
-      - name: Deployment placeholder
-        run: echo "Checks passed. Configure the deployment command and required secrets for your target environment."
+          {
+            echo "## Deployment"
+            echo ""
+            echo "A deployment bundle was created and uploaded as a workflow artifact."
+            echo "No deployment target is configured yet; deploy the artifact manually."
+          } >> "$GITHUB_STEP_SUMMARY"

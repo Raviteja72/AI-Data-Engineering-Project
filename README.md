@@ -113,14 +113,18 @@ Main DAG details:
 
 Workflows are stored under `.github/workflows/`:
 
-- `preview.yaml` runs Black, Flake8, Python compilation, and available pytest tests
-  when a pull request targeting `main` is opened or updated.
-- `deploy.yaml` runs Python compilation and available pytest tests after a pull
-  request is merged into `main`. Its deployment step is a placeholder until a
-  deployment target and credentials are configured.
+- `preview.yaml` runs Black, Flake8, Python compilation, and available pytest
+  tests, parses the dbt project, and checks Snowflake SQL syntax when a pull
+  request targeting `main` is opened or updated. These checks do not connect to
+  Snowflake.
+- `deploy.yaml` creates and uploads a deployment bundle after a pull request is
+  merged into `main`. No deployment target is configured yet, so the artifact
+  must be deployed manually.
 
 To block merges when preview checks fail, configure the corresponding GitHub
 Actions job as a required status check in the repository's branch protection rules.
+GitHub is configured to automatically delete PR source branches after their PRs
+are merged.
 
 ## dbt Project
 

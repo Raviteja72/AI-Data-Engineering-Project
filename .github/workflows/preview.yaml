@@ -26,6 +26,7 @@ jobs:
           python -m pip install --upgrade pip
           if [ -f requirements.txt ]; then pip install -r requirements.txt; fi
           pip install black==24.10.0 flake8 pytest
+          pip install "dbt-snowflake==1.8.*" "sqlfluff==3.4.2" "sqlfluff-templater-dbt==3.4.2"
 
       - name: Black format check
         run: black --check ai Airflow/Dags
@@ -43,3 +44,23 @@ jobs:
           else
             echo "No Python tests found; skipping pytest."
           fi
+
+      - name: Parse dbt project
+        working-directory: zomato_project
+        env:
+          SNOWFLAKE_ACCOUNT: ci-placeholder
+          SNOWFLAKE_USER: ci-placeholder
+          SNOWFLAKE_PASSWORD: ci-placeholder
+        run: dbt parse --no-partial-parse --profiles-dir .
+
+      - name: Check dbt Snowflake SQL syntax
+        working-directory: zomato_project
+        env:
+          DBT_PROFILES_DIR: .
+          SNOWFLAKE_ACCOUNT: ci-placeholder
+          SNOWFLAKE_USER: ci-placeholder
+          SNOWFLAKE_PASSWORD: ci-placeholder
+        run: sqlfluff parse --dialect snowflake --templater dbt models
+
+      - name: Check Airflow Snowflake SQL syntax
+        run: sqlfluff parse --dialect snowflake --templater raw Airflow/Dags/queries/reload_raw.sql
