@@ -1,0 +1,48 @@
+name: Package After Main Merge
+
+on:
+  pull_request:
+    branches: [main]
+    types: [closed]
+
+permissions:
+  contents: read
+
+jobs:
+  package:
+    if: github.event.pull_request.merged == true && github.event.pull_request.base.ref == 'main'
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout merged commit
+        uses: actions/checkout@v4
+        with:
+          ref: ${{ github.event.pull_request.merge_commit_sha }}
+
+      - name: Create deployment bundle
+        run: |
+          tar \
+            --exclude='*/.env' \
+            --exclude='*/logs' \
+            --exclude='*/target' \
+            --exclude='*/dbt_packages' \
+            --exclude='*/__pycache__' \
+            -czf deployment-bundle.tar.gz \
+            Airflow/Dags Airflow/Dockerfile Airflow/docker-compose.yaml ai zomato_project
+
+      - name: Upload deployment bundle
+        uses: actions/upload-artifact@v4
+        with:
+          name: deployment-bundle-${{ github.event.pull_request.number }}
+          path: deployment-bundle.tar.gz
+          if-no-files-found: error
+          retention-days: 14
+
+      - name: Report deployment status
+        run: |
+          {
+            echo "## Deployment"
+            echo ""
+            echo "A deployment bundle was created and uploaded as a workflow artifact."
+            echo "No deployment target is configured yet; deploy the artifact manually."
+          } >> "$GITHUB_STEP_SUMMARY"
