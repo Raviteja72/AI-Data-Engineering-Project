@@ -1,4 +1,4 @@
-# Zomato AI Data Engineering End-to-End Project
+# AI-Data-Engineering-Project
 
 This repository implements an end-to-end data engineering pipeline for Zomato-style restaurant and order data. It combines Apache Airflow for orchestration, Snowflake for cloud data warehousing, and dbt for transformation logic to turn raw operational data into analytics-ready tables.
 
