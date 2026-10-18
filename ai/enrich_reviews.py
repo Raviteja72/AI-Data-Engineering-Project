@@ -4,7 +4,7 @@ import snowflake.connector
 from openai import OpenAI
 from dotenv import load_dotenv
 
-MODEL = "gpt-5-mini"
+MODEL = "gpt-4o-mini"
 # Change MODEL to select a different OpenAI model.
 
 SAMPLE_N = 15
@@ -100,7 +100,7 @@ def get_reviews_to_enrich(cursor):
 def classify_review(comment):
     response = client.chat.completions.create(
         model=MODEL,
-        temperature=1,
+        temperature=0.1,
         response_format={"type": "json_object"},
         messages=[
             {"role": "system", "content": SYSTEM_PROMPT},
