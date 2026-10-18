@@ -5,3 +5,4 @@ logs/
 .env
 __pycache__/
 *.py[cod]
+review_embeddings.parquet

@@ -32,7 +32,7 @@ jobs:
         run: black --check ai Airflow/Dags
 
       - name: Flake8 lint
-        run: flake8 ai Airflow/Dags
+        run: flake8 --max-line-length=88 ai Airflow/Dags
 
       - name: Python compile check
         run: python -m compileall -q ai Airflow/Dags
