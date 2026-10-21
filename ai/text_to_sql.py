@@ -11,13 +11,24 @@ load_dotenv()
 
 MODEL = "gpt-4o-mini"
 
-FORBIDDEN_WORDS = ['drop', 'delete', 'truncate', 'alter', 'update', 'insert', 'create', 'replace', 'grant', 'revoke']
+FORBIDDEN_WORDS = [
+    "drop",
+    "delete",
+    "truncate",
+    "alter",
+    "update",
+    "insert",
+    "create",
+    "replace",
+    "grant",
+    "revoke",
+]
 
 EXAMPLE_QUESTIONS = [
     "Top 10 cities by GMV",
     "Which cuisin has the most orders?",
     "Average delivery time by city, worst first",
-    "Cancel rate by payment method"
+    "Cancel rate by payment method",
 ]
 
 client = OpenAI(api_key=os.getenv("OPENAI_API_KEY"))
@@ -38,7 +49,7 @@ MART_DELIVERY_SLA(city, order_hour, delivered_orders, p50_delivery_min, late_rat
  
 Note: gmv means delivered revenue. Prefer the MART_ tables when they fit the question.
 """
- 
+
 SYSTEM_PROMPT = f"""
 You are a Snowflake SQL expert. Write ONE SELECT query that answers the question.
  
@@ -50,7 +61,6 @@ Rules:
  
 {SCHEMA}
 """
- 
 
 
 @st.cache_resource
@@ -62,7 +72,7 @@ def get_connection():
         warehouse=os.getenv("SNOWFLAKE_WAREHOUSE"),
         database=os.getenv("SNOWFLAKE_DATABASE"),
         schema="MARTS",
-        role = "DBT_ROLE"
+        role="DBT_ROLE",
     )
 
 
@@ -73,8 +83,8 @@ def generate_sql(question):
         response_format={"type": "json_object"},
         messages=[
             {"role": "system", "content": SYSTEM_PROMPT},
-            {"role": "user", "content": question}
-        ]
+            {"role": "user", "content": question},
+        ],
     )
     answer = response.choices[0].message.content
     sql = json.loads(answer)["sql"]
@@ -95,6 +105,7 @@ def is_safe(sql):
 
     return True
 
+
 def run_query(sql):
     conn = get_connection()
     cursor = conn.cursor()
@@ -109,8 +120,10 @@ with st.sidebar:
     for q in EXAMPLE_QUESTIONS:
         st.markdown(f" - {q}")
 
-question = st.text_input("Enter your question here", 
-                         placeholder="e.g. Top 10 restaurants by revenune in Banglore")
+question = st.text_input(
+    "Enter your question here",
+    placeholder="e.g. Top 10 restaurants by revenune in Banglore",
+)
 
 
 if question:
@@ -130,4 +143,4 @@ if question:
                 st.bar_chart(df, x=df.columns[0], y=df.columns[1])
 
         except Exception as e:
-            st.error(f"Error running query: {e}") 
+            st.error(f"Error running query: {e}")
