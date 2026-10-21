@@ -1,239 +1,241 @@
-# AI-Data-Engineering-Project
+# Zomato Analytics & AI Data Platform
 
-This repository implements an end-to-end data engineering pipeline for Zomato-style restaurant and order data. It combines Apache Airflow for orchestration, Snowflake for cloud data warehousing, and dbt for transformation logic to turn raw operational data into analytics-ready tables.
+An end-to-end analytics engineering project that turns restaurant, order, and
+customer-review data into Snowflake analytics models and AI-powered experiences.
+The platform combines Apache Airflow for orchestration, dbt for transformation,
+and OpenAI-powered workflows for review enrichment, semantic search, and
+natural-language analytics.
 
-## Overview
+## Project at a glance
 
-The project is designed to:
-
-- Ingest raw restaurant, review, user, menu, order, and order-item data into Snowflake
-- Orchestrate daily ELT jobs with Airflow
-- Transform raw data into curated staging and mart models using dbt
-- Build analytical views for revenue, customer behavior, restaurant performance, and delivery SLA monitoring
-- Support AI-assisted enrichment workflows using OpenAI credentials configured in the pipeline environment
+- **Ingest:** Load restaurant, review, user, food, menu, order, and order-item
+  files from a Snowflake stage into the `ZOMATO.RAW` schema.
+- **Transform:** Use dbt staging views and analytics marts to prepare
+  consistent, query-ready Snowflake data.
+- **Orchestrate:** Run the daily ELT and AI review-enrichment workflow with
+  Apache Airflow.
+- **Enrich:** Classify review sentiment, topic, and key issue with an OpenAI
+  model, then publish aggregated review insights through dbt.
+- **Explore:** Ask questions of review text with retrieval-augmented generation
+  (RAG), or explore business metrics with a natural-language-to-SQL app.
 
 ## Architecture
 
-The solution follows a classic modern ELT pattern:
+![Architecture diagram showing the Snowflake, Apache Airflow, dbt, OpenAI, and Streamlit components](docs/architecture.svg)
 
-1. Raw CSV data is staged in Snowflake
-2. Airflow runs the ingestion DAG on a schedule
-3. dbt models clean and standardize the raw layer into staging tables
-4. dbt marts produce analytics-friendly fact and dimension tables
-5. Analysts and BI tools consume the final marts for reporting and dashboarding
+The `zomato_batch` DAG runs daily in this order:
 
-## Tech Stack
+1. `reload_raw` loads source files into Snowflake.
+2. `dbt_build_core` builds the non-AI staging and mart models.
+3. `enrich_reviews` classifies reviews that have not yet been enriched.
+4. `dbt_build_ai` builds dbt models tagged `ai`, including the review insights
+   mart.
 
-- Python
-- Apache Airflow
-- Docker & Docker Compose
-- Snowflake
-- dbt
-- SQL
-- OpenAI API (optional enrichment/configured in environment)
+## Analytics models
 
-## Repository Structure
+The dbt project is in [`zomato_project/`](zomato_project/). Staging models
+standardize the raw restaurant, review, user, food, menu, order, and order-item
+data. Staging models are views; marts are tables.
+
+Core dimensions and facts include:
+
+- `dim_customer`, `dim_date`, `dim_food`, and `dim_restaurants`
+- `fct_orders` and `fct_order_items`
+
+Business-facing marts include:
+
+- `mart_daily_city_revenue` for daily city-level orders, GMV, and average order
+  value
+- `mart_delivery_sla` for delivery-time and late-delivery measures
+- `mart_restaurant_performance` for restaurant sales and customer metrics
+- `mart_review_insights` for review counts, sentiment, topics, average ratings,
+  and flagged issues
+
+## AI experiences
+
+### Review enrichment
+
+[`ai/enrich_reviews.py`](ai/enrich_reviews.py) reads reviews from
+`ZOMATO.RAW.reviews`, classifies each review with OpenAI, and stores the
+sentiment label and score, topic, key issue, model, and enrichment timestamp in
+`ZOMATO.AI.review_enriched`. The dbt AI source and
+[`mart_review_insights`](zomato_project/models/marts/mart_review_insights.sql)
+join the enrichment data to staged reviews for analysis.
+
+The current enrichment script processes up to 15 new reviews per run. Review
+enrichment requires Snowflake access and a valid OpenAI API key.
+
+### Review RAG
+
+[`ai/rag_chat.py`](ai/rag_chat.py) finds relevant reviews using embeddings and
+cosine similarity, then asks an OpenAI chat model to answer using the retrieved
+reviews as context. The app displays the reviews used to form each response.
+It reads a sample of reviews from `ZOMATO.STAGING.STG_REVIEWS` and caches
+embeddings in a local Parquet file.
+
+### Text-to-SQL
+
+[`ai/text_to_sql.py`](ai/text_to_sql.py) translates a business question into a
+Snowflake SQL query, displays the query and results, and charts results when
+they contain a categorical and numeric column. It is configured with a
+read-oriented prompt and basic query checks; review generated SQL before
+running it.
+
+## Repository layout
 
 ```text
 .
+├── .github/workflows/       # Pull-request checks and deployment packaging
 ├── Airflow/
 │   ├── Dags/
-│   │   └── zomato_batch.py
+│   │   ├── queries/         # Snowflake raw-load SQL
+│   │   └── zomato_batch.py  # Daily ELT and AI workflow
 │   ├── Dockerfile
-│   ├── docker-compose.yaml
-│   ├── .env.example
-│   └── .gitignore
-├── logs/
-├── README.md
-├── zomato_project/
-│   ├── dbt_project.yml
-│   ├── profiles.yml
-│   ├── analyses/
-│   ├── macros/
-│   ├── models/
-│   │   ├── sources.yaml
-│   │   ├── staging/
-│   │   │   ├── staging.yaml
-│   │   │   ├── stg_food.sql
-│   │   │   ├── stg_menu.sql
-│   │   │   ├── stg_order_items.sql
-│   │   │   ├── stg_orders.sql
-│   │   │   ├── stg_restaurants.sql
-│   │   │   ├── stg_reviews.sql
-│   │   │   └── stg_users.sql
-│   │   └── marts/
-│   │       ├── dim_customer.sql
-│   │       ├── dim_date.sql
-│   │       ├── dim_food.sql
-│   │       ├── dim_restaurants.sql
-│   │       ├── fct_order_items.sql
-│   │       ├── fct_orders.sql
-│   │       ├── mart_daily_city_revenue.sql
-│   │       ├── mart_delivery_sla.sql
-│   │       ├── mart_restaurant_performance.sql
-│   │       └── marts.yaml
-│   ├── seeds/
-│   ├── snapshots/
-│   └── tests/
-└── .gitignore
+│   └── docker-compose.yaml
+├── ai/
+│   ├── enrich_reviews.py    # OpenAI review classification
+│   ├── rag_chat.py          # Semantic search and review Q&A
+│   └── text_to_sql.py       # Natural-language analytics app
+└── zomato_project/
+    ├── dbt_project.yml
+    ├── profiles.yml
+    └── models/
+        ├── staging/         # Cleaned source views
+        └── marts/           # Facts, dimensions, and analytics marts
 ```
 
-## Data Sources
+## Prerequisites
 
-The raw layer is built around these Zomato-related entities:
+- Docker with Docker Compose
+- A Snowflake account with the `ZOMATO` database, `ZOMATO_WH` warehouse,
+  `DBT_ROLE`, required schemas and grants, and the `ZOMATO_RAW_STAGE` stage
+  populated with the source files
+- An OpenAI API key for review enrichment and the AI apps
+- Python and the application dependencies to run the Streamlit apps locally
+- dbt Core with the Snowflake adapter to run dbt locally
 
-- Restaurants
-- Reviews
-- Users
-- Food items
-- Orders
-- Menu
-- Order items
+## Configuration
 
-These are mapped in the dbt sources configuration under `zomato_project/models/sources.yaml` inside the `ZOMATO.RAW` Snowflake schema.
+### Airflow
 
-## Airflow Pipeline
+Create `Airflow/.env` (do not commit it) with the credentials used by Docker
+Compose:
 
-The DAG file `Airflow/Dags/zomato_batch.py` orchestrates the pipeline:
-
-- Uses a Snowflake connection configured via `AIRFLOW_CONN_SNOWFLAKE_DEFAULT`
-- Runs `COPY INTO` statements into the raw schema for each table
-- Executes a dbt build command after the raw load step
-
-Main DAG details:
-
-- DAG name: `zomato_batch`
-- Schedule: daily (`@daily`)
-- Trigger: Airflow task sequence
-- Task flow:
-  - `reload_raw` → loads raw data into Snowflake
-  - `dbt_build_core` → runs the dbt project to create staging and marts
-
-## GitHub Actions
-
-Workflows are stored under `.github/workflows/`:
-
-- `preview.yaml` runs Black, Flake8, Python compilation, and available pytest
-  tests, parses the dbt project, and checks Snowflake SQL syntax when a pull
-  request targeting `main` is opened or updated. These checks do not connect to
-  Snowflake.
-- `deploy.yaml` creates and uploads a deployment bundle after a pull request is
-  merged into `main`. No deployment target is configured yet, so the artifact
-  must be deployed manually.
-
-To block merges when preview checks fail, configure the corresponding GitHub
-Actions job as a required status check in the repository's branch protection rules.
-GitHub is configured to automatically delete PR source branches after their PRs
-are merged.
-
-## dbt Project
-
-The dbt project is configured in `zomato_project/dbt_project.yml`.
-
-It contains:
-
-- `staging` models materialized as views
-- `marts` models materialized as tables
-- central source definitions pointing to the Snowflake raw schema
-
-### Staging Models
-
-The staging layer includes cleaned source data for:
-
-- `stg_restaurants.sql`
-- `stg_orders.sql`
-- `stg_reviews.sql`
-- `stg_users.sql`
-- `stg_food.sql`
-- `stg_menu.sql`
-- `stg_order_items.sql`
-
-### Mart Models
-
-The final analytical layer includes:
-
-- `dim_customer.sql`
-- `dim_date.sql`
-- `dim_food.sql`
-- `dim_restaurants.sql`
-- `fct_orders.sql`
-- `fct_order_items.sql`
-- `mart_daily_city_revenue.sql`
-- `mart_delivery_sla.sql`
-- `mart_restaurant_performance.sql`
-
-These support common questions such as:
-
-- Which restaurants generate the most revenue?
-- How does daily city revenue trend over time?
-- What is the median or p90 delivery time?
-- Which customers and orders contribute to sales volume?
-
-## Environment Setup
-
-1. Copy the sample environment file:
-
-```bash
-cp Airflow/.env.example Airflow/.env
+```dotenv
+SNOWFLAKE_ACCOUNT=your-account-identifier
+SNOWFLAKE_USER=your-snowflake-user
+SNOWFLAKE_PASSWORD=your-snowflake-password
+OPENAI_API_KEY=your-openai-api-key
 ```
 
-2. Update the values in `Airflow/.env` with your Snowflake credentials and any needed OpenAI API key.
+The Airflow Snowflake connection is configured for the `ZOMATO` database,
+`ZOMATO_WH` warehouse, `RAW` schema, and `DBT_ROLE`. The Docker Compose setup
+creates an Airflow administrator with the local-development credentials
+`admin` / `admin`; change these before exposing the service beyond a local
+environment.
 
-3. Start the Airflow stack:
+### Local dbt
+
+The dbt profile in [`zomato_project/profiles.yml`](zomato_project/profiles.yml)
+expects `SNOWFLAKE_ACCOUNT`, `SNOWFLAKE_USER`, and `SNOWFLAKE_PASSWORD` in the
+environment. Export them in your shell before running dbt. `dbt parse` can
+validate project configuration without connecting to Snowflake; `dbt build`
+requires valid warehouse credentials and access.
+
+### Local AI apps
+
+The AI scripts load environment variables from the current working directory.
+When running an app from `ai/`, create a private `ai/.env` containing the
+credentials below. Do not commit credentials.
+
+```dotenv
+OPENAI_API_KEY=your-openai-api-key
+SNOWFLAKE_ACCOUNT=your-account-identifier
+SNOWFLAKE_USER=your-snowflake-user
+SNOWFLAKE_PASSWORD=your-snowflake-password
+SNOWFLAKE_WAREHOUSE=ZOMATO_WH
+SNOWFLAKE_DATABASE=ZOMATO
+SNOWFLAKE_SCHEMA=STAGING
+```
+
+Install the app dependencies in your Python environment (`streamlit`, `numpy`,
+`pandas`, `snowflake-connector-python`, `openai`, `python-dotenv`, and
+`pyarrow`). The text-to-SQL app also requires access to the `MARTS` schema.
+
+## Run the project
+
+### Start Airflow
+
+From the repository root:
 
 ```bash
 cd Airflow
+docker compose build
 docker compose up -d
 ```
 
-4. Open the Airflow UI:
+Open the Airflow UI at <http://localhost:8080>, sign in with the local
+development credentials, and enable or trigger the `zomato_batch` DAG.
 
-```text
-http://localhost:8080
-```
-
-Default login created in the config is:
-
-- Username: `admin`
-- Password: `admin`
-
-## Local dbt Commands
-
-From the project root:
+Stop the stack with:
 
 ```bash
+docker compose down
+```
+
+### Run dbt locally
+
+From the repository root, after exporting the Snowflake environment variables:
+
+```bash
+dbt parse --project-dir zomato_project --profiles-dir zomato_project
 dbt build --project-dir zomato_project --profiles-dir zomato_project
 ```
 
-The project is also designed to be executed from the Airflow job using the configured dbt venv path.
+To build just the AI review insights model and its dependencies:
 
-## Project Goals
+```bash
+dbt build --project-dir zomato_project --profiles-dir zomato_project \
+  --select mart_review_insights
+```
 
-This project demonstrates a realistic end-to-end analytics engineering workflow for a food delivery business, including:
+### Launch an AI app
 
-- Raw ingestion
-- Data validation and staging
-- Dimensional modeling
-- Business reporting marts
-- Automated orchestration
-- Cloud warehouse integration
+Install the dependencies listed above, configure `ai/.env`, and run commands
+from the `ai/` directory:
 
-## Notes
+```bash
+cd ai
+streamlit run rag_chat.py
+```
 
-- The project is configured to use the Snowflake warehouse `ZOMATO_WH` and schema `ZOMATO.RAW` in the Airflow DAG.
-- The root `README.md` is intentionally minimal and the full project details live in the source folders and dbt model definitions.
-- The setup is production-oriented and suitable for learning, experimentation, and extension to a broader reporting stack.
+Or launch the business analytics app:
 
-## Future Enhancements
+```bash
+streamlit run text_to_sql.py
+```
 
-Potential next steps for the project include:
+## Quality checks
 
-- Adding data quality tests for each dbt model
-- Integrating dashboards with a BI tool
-- Expanding historical snapshots for trend analysis
-- Incorporating real-time ingestion or event-based pipelines
-- Adding AI-based sentiment analysis for review data
+The pull-request workflow runs formatting, lint, Python compilation, optional
+pytest tests, dbt parsing, and Snowflake SQL parsing. The checks do not connect
+to a live Snowflake account. Run the Python checks locally from the repository
+root:
 
-## License
+```bash
+black --check ai Airflow/Dags
+flake8 --max-line-length=88 ai Airflow/Dags
+python -m compileall -q ai Airflow/Dags
+```
 
-This project is intended for learning and demonstration purposes unless otherwise specified in the repository.
+After a pull request is merged into `main`, the deployment workflow creates a
+deployment bundle and uploads it as a GitHub Actions artifact. It does not
+deploy to a runtime environment; deployment must be completed separately.
+
+## Project scope and next steps
+
+This project demonstrates a batch data platform for food-delivery analytics,
+including source ingestion, dimensional modeling, orchestration, and applied
+LLM workflows. Natural extensions include broader dbt data-quality coverage,
+production secret management, deployment automation, and dashboard
+integration.

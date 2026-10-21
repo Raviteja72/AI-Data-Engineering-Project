@@ -1,0 +1,149 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="1500" height="720" viewBox="0 0 1500 720" role="img" aria-labelledby="title description">
+  <title id="title">Zomato Analytics and AI Data Platform Architecture</title>
+  <desc id="description">Snowflake source data flows through dbt core models, OpenAI review enrichment, Snowflake AI storage, and a dbt review insights mart. Apache Airflow orchestrates the daily pipeline. Streamlit applications provide review RAG and text-to-SQL analytics.</desc>
+  <defs>
+    <symbol id="airflow" viewBox="0 0 24 24">
+      <path fill="#017CEE" d="M17.195 16.822l4.002-4.102C23.55 10.308 23.934 5.154 24 .43a.396.396 0 0 0-.246-.373.392.392 0 0 0-.437.09l-6.495 6.658-4.102-4.003C10.309.45 5.154.066.43 0H.423a.397.397 0 0 0-.277.683l6.658 6.494-4.003 4.103C.45 13.692.065 18.846 0 23.57a.398.398 0 0 0 .683.282l6.494-6.657 3.934 3.837.17.165c2.41 2.353 7.565 2.737 12.288 2.803h.006a.397.397 0 0 0 .277-.683l-6.657-6.495zm-.409-9.476c.04.115.05.24.031.344-.17.96-1.593 2.538-4.304 3.87a.597.597 0 0 0-.08-.079c1.432-3.155 1.828-5.61 1.175-7.322l3.058 2.984.12.203zm-.131 9.44a.73.73 0 0 1-.347.031c-.96-.171-2.537-1.594-3.87-4.307a.656.656 0 0 0 .08-.078l-.001.001c3.155 1.432 5.61 1.83 7.324 1.174l-2.969 3.043M23.568.392a.05.05 0 0 1 .052-.011c.018.006.03.024.029.043-.065 4.655-.437 9.726-2.703 12.05-1.53 1.565-4.326 1.419-8.283-.377.006-.037.021-.07.02-.108 0-.044-.017-.082-.026-.123 2.83-1.39 4.315-3.037 4.506-4.115.057-.322-.009-.542-.102-.688l6.507-6.67V.392zM.393.43A.045.045 0 0 1 .382.38C.39.36.403.343.425.35c4.655.065 9.727.438 12.05 2.703l.002.002c1.56 1.527 1.415 4.323-.379 8.28-.033-.005-.062-.02-.097-.02h-.008c-.045.001-.084.019-.126.027-1.39-2.83-3.037-4.314-4.115-4.506-.323-.057-.542.01-.688.103L.393.43zm11.94 11.563a.331.331 0 0 1-.327.335H12a.332.332 0 0 1-.004-.661c.172.016.333.144.335.326h.002zm-5.12 4.661a.722.722 0 0 1-.03-.345c.17-.96 1.595-2.54 4.309-3.873.013.016.019.035.033.05.013.012.03.017.044.028-1.434 3.158-1.83 5.613-1.177 7.326l-3.041-2.967m-.006-9.659a.735.735 0 0 1 .345-.031c.961.17 2.54 1.594 3.871 4.306a.597.597 0 0 0-.079.08c-2.167-.983-4.007-1.484-5.498-1.484-.68 0-1.289.103-1.825.308L7.128 7.35M.43 23.607c-.018.018-.038.015-.052.01-.019-.007-.028-.021-.028-.043.065-4.654.437-9.725 2.703-12.049 1.527-1.565 4.325-1.419 8.286.378-.006.035-.02.067-.02.104 0 .043.018.083.026.124-2.831 1.391-4.317 3.04-4.51 4.117-.057.322.01.542.103.688L.43 23.607zm23.144.042c-4.655-.065-9.726-.437-12.05-2.703l-.005-.006c-1.56-1.526-1.412-4.322.383-8.279.033.005.064.02.098.02h.009c.043 0 .08-.018.122-.027 1.39 2.832 3.036 4.317 4.115 4.51.083.014.16.021.23.021a.776.776 0 0 0 .45-.133l6.68 6.516c.02.02.016.04.01.052a.042.042 0 0 1-.042.029z"/>
+    </symbol>
+    <symbol id="snowflake" viewBox="0 0 24 24">
+      <path fill="#29B5E8" d="M7.602 12.4c.038-.151.076-.304.076-.456 0-.114-.038-.228-.038-.342-.114-.343-.304-.647-.646-.838l-4.87-2.777c-.685-.38-1.56-.152-1.94.533-.381.685-.153 1.56.532 1.94l2.701 1.56-2.701 1.56c-.685.38-.913 1.256-.533 1.94.38.685 1.256.914 1.94.533l4.832-2.777c.343-.267.571-.533.647-.876zm1.332 2.626c-.266-.038-.57.038-.837.19l-4.832 2.777c-.685.38-.913 1.256-.532 1.94.38.686 1.255.914 1.94.533l2.701-1.56v3.12c0 .8.647 1.408 1.446 1.408.799 0 1.407-.647 1.407-1.408v-5.592c0-.761-.57-1.37-1.293-1.408zm4.946-6.088c.266.038.57-.038.837-.19l4.832-2.777c.685-.38.913-1.256.532-1.94-.38-.686-1.255-.914-1.94-.533l-2.701 1.56V1.975c0-.799-.647-1.408-1.446-1.408-.799 0-1.446.609-1.446 1.408V7.53c0 .76.609 1.37 1.332 1.407zM3.265 5.97l4.832 2.777c.266.152.533.19.837.19.723-.038 1.331-.684 1.331-1.407V1.975c0-.799-.646-1.408-1.407-1.408-.799 0-1.446.647-1.446 1.408v3.12l-2.701-1.56c-.685-.38-1.56-.152-1.94.533-.419.646-.19 1.521.494 1.902zm9.093 6.011a.412.412 0 0 0-.114-.266l-.57-.571a.346.346 0 0 0-.267-.114.412.412 0 0 0-.266.114l-.571.57a.411.411 0 0 0-.114.267c0 .076.038.19.114.267l.57.57a.345.345 0 0 0 .267.114c.076 0 .19-.038.266-.114l.571-.57a.412.412 0 0 0 .114-.267zm1.598.533L11.94 14.53c-.039.038-.153.114-.229.114h-.608a.411.411 0 0 1-.267-.114L8.82 12.514a.408.408 0 0 1-.076-.229v-.608c0-.076.038-.19.114-.267l2.016-2.016a.41.41 0 0 1 .267-.114h.608a.41.41 0 0 1 .267.114l2.016 2.016a.347.347 0 0 1 .114.267v.608c-.076.077-.114.19-.19.229zm5.593 5.44l-4.832-2.777c-.266-.152-.57-.19-.837-.152-.723.038-1.332.684-1.332 1.408v5.554c0 .8.647 1.408 1.408 1.408.799 0 1.446-.647 1.446-1.408v-3.12l2.7 1.56c.686.38 1.561.152 1.941-.533.419-.646.19-1.521-.494-1.94zm2.549-7.533l-2.701 1.56 2.7 1.56c.686.38.914 1.256.533 1.94-.38.685-1.255.913-1.94.533l-4.832-2.778a1.644 1.644 0 0 1-.647-.798c-.037-.153-.076-.305-.076-.457 0-.114.039-.228.039-.342.114-.343.342-.647.646-.837l4.832-2.778c.685-.38 1.56-.152 1.94.533.457.609.19 1.484-.494 1.864z"/>
+    </symbol>
+    <symbol id="dbt" viewBox="0 0 24 24">
+      <path fill="#FF694B" d="M17.9004 9.3763a8.1488 8.1488 0 0 0-3.0421-3.1206l1.7708.8385a10.2874 10.2874 0 0 1 3.74 3.0007l3.234-5.9295a2.8546 2.8546 0 0 0-.0611-2.9604C22.7566.0371 21.2112-.3409 19.9754.3327l-5.8749 3.2101a4.3612 4.3612 0 0 1-4.1761 0L4.1769.408a2.8545 2.8545 0 0 0-2.9592.0632c-1.1673.7853-1.5452 2.33-.8723 3.5655L3.55 9.9106a4.3612 4.3612 0 0 1 0 4.1772l-3.1272 5.743a2.86 2.86 0 0 0 .085 2.9974c.794 1.1438 2.3225 1.5054 3.5448.8385l6.0581-3.3049a10.2877 10.2877 0 0 1-3.0051-3.7454l-.8374-1.7708a8.148 8.148 0 0 0 3.1206 3.0421l10.5832 5.779c1.2213.666 2.7481.3055 3.5426-.8363a2.8699 2.8699 0 0 0 .0796-3.0018L17.9004 9.3763zm3.3801-7.7351c.6022 0 1.0904.4882 1.0904 1.0904s-.4882 1.0904-1.0904 1.0904-1.0904-.4882-1.0904-1.0904  .4882-1.0904 1.0904-1.0904zM2.7442 3.822c-.6022 0-1.0904-.4882-1.0904-1.0904s.4882-1.0904 1.0904-1.0904 1.0904.4882 1.0904 1.0904-.4882 1.0904-1.0904 1.0904zm0 18.5363c-.6022 0-1.0904-.4882-1.0904-1.0904 0-.6022.4882-1.0904 1.0904-1.0904s1.0904  .4882 1.0904 1.0904c0 .6022-.4882 1.0904-1.0904 1.0904zm10.3585-11.4489c-1.2008-.0035-2.177.9672-2.1805 2.1679a2.1738 2.1738 0 0 0 .7052 1.6091c-1.4872-.2091-2.5234-1.5843-2.3142-3.0716.2091-1.4872 1.5843-2.5234 3.0716-2.3142a2.7194 2.7194 0 0 1 2.3142 2.3142 2.1623 2.1623 0 0 0-1.5963-.7054zm8.1778 11.4489c-.6022 0-1.0904-.4882-1.0904-1.0904 0-.6022.4882-1.0904 1.0904-1.0904s1.0904.4882 1.0904 1.0904-.4882 1.0904-1.0904 1.0904z"/>
+    </symbol>
+    <symbol id="openai" viewBox="0 0 24 24">
+      <path fill="#10A37F" d="M22.2819 9.8211a5.9847 5.9847 0 0 0-.5157-4.9108 6.0462 6.0462 0 0 0-6.5098-2.9A6.0651 6.0651 0 0 0 4.9807 4.1818a5.9847 5.9847 0 0 0-3.9977 2.9 6.0462 6.0462 0 0 0 .7427 7.0966 5.98 5.98 0 0 0 .511 4.9107 6.051 6.051 0 0 0 6.5146 2.9001A5.9847 5.9847 0 0 0 13.2599 24a6.0557 6.0557 0 0 0 5.7718-4.2058 5.9894 5.9894 0 0 0 3.9977-2.9001 6.0557 6.0557 0 0 0-.7475-7.0729zm-9.022 12.6081a4.4755 4.4755 0 0 1-2.8764-1.0408l.1419-.0804 4.7783-2.7582a.7948.7948 0 0 0 .3927-.6813v-6.7369l2.02 1.1686a.071.071 0 0 1 .038.052v5.5826a4.504 4.504 0 0 1-4.4945 4.4944zm-9.6607-4.1254a4.4708 4.4708 0 0 1-.5346-3.0137l.142.0852 4.783 2.7582a.7712.7712 0 0 0 .7806 0l5.8428-3.3685v2.3324a.0804.0804 0 0 1-.0332.0615L9.74 19.9502a4.4992 4.4992 0 0 1-6.1408-1.6464zM2.3408 7.8956a4.485 4.485 0 0 1 2.3655-1.9728V11.6a.7664.7664 0 0 0 .3879.6765l5.8144 3.3543-2.0201 1.1685a.0757.0757 0 0 1-.071 0l-4.8303-2.7865A4.504 4.504 0 0 1 2.3408 7.872zm16.5963 3.8558L13.1038 8.364 15.1192 7.2a.0757.0757 0 0 1 .071 0l4.8303 2.7913a4.4944 4.4944 0 0 1-.6765 8.1042v-5.6772a.79.79 0 0 0-.407-.667zm2.0107-3.0231l-.142-.0852-4.7735-2.7818a.7759.7759 0 0 0-.7854 0L9.409 9.2297V6.8974a.0662.0662 0 0 1 .0284-.0615l4.8303-2.7866a4.4992 4.4992 0 0 1 6.6802 4.66zM8.3065 12.863l-2.02-1.1638a.0804.0804 0 0 1-.038-.0567V6.0742a4.4992 4.4992 0 0 1 7.3757-3.4537l-.142.0805L8.704 5.459a.7948.7948 0 0 0-.3927.6813zm1.0976-2.3654l2.602-1.4998 2.6069 1.4998v2.9994l-2.5974 1.4997-2.6067-1.4997Z"/>
+    </symbol>
+    <symbol id="streamlit" viewBox="0 0 24 24">
+      <path fill="#FF4B4B" d="M16.673 11.32l6.862-3.618c.233-.136.554.12.442.387L20.463 17.1zm-8.556-.229l3.473-5.187c.203-.328.578-.316.793-.028l7.886 11.75zm-3.375 7.25c-.28 0-.835-.284-.993-.716l-3.72-9.46c-.118-.331.139-.614.48-.464l19.474 10.306c-.149.147-.453.337-.72.334z"/>
+    </symbol>
+    <symbol id="docker" viewBox="0 0 24 24">
+      <path fill="#2496ED" d="M13.983 11.078h2.119a.186.186 0 00.186-.185V9.006a.186.186 0 00-.186-.186h-2.119a.185.185 0 00-.185.185v1.888c0 .102.083.185.185.185m-2.954-5.43h2.118a.186.186 0 00.186-.186V3.574a.186.186 0 00-.186-.185h-2.118a.185.185 0 00-.185.185v1.888c0 .102.082.185.185.185m0 2.716h2.118a.187.187 0 00.186-.186V6.29a.186.186 0 00-.186-.185h-2.118a.185.185 0 00-.185.185v1.887c0 .102.082.185.185.186m-2.93 0h2.12a.186.186 0 00.184-.186V6.29a.185.185 0 00-.185-.185H8.1a.185.185 0 00-.185.185v1.887c0 .102.083.185.185.186m-2.964 0h2.119a.186.186 0 00.185-.186V6.29a.185.185 0 00-.185-.185H5.136a.186.186 0 00-.186.185v1.887c0 .102.084.185.186.186m5.893 2.715h2.118a.186.186 0 00.186-.185V9.006a.186.186 0 00-.186-.186h-2.118a.185.185 0 00-.185.185v1.888c0 .102.082.185.185.185m-2.93 0h2.12a.185.185 0 00.184-.185V9.006a.185.185 0 00-.184-.186h-2.12a.185.185 0 00-.184.185v1.888c0 .102.083.185.185.185m-2.964 0h2.119a.185.185 0 00.185-.185V9.006a.185.185 0 00-.184-.186h-2.12a.186.186 0 00-.186.186v1.887c0 .102.084.185.186.185m-2.92 0h2.12a.185.185 0 00.184-.185V9.006a.185.185 0 00-.184-.186h-2.12a.185.185 0 00-.184.185v1.888c0 .102.082.185.185.185M23.763 9.89c-.065-.051-.672-.51-1.954-.51-.338.001-.676.03-1.01.087-.248-1.7-1.653-2.53-1.716-2.566l-.344-.199-.226.327c-.284.438-.49.922-.612 1.43-.23.97-.09 1.882.403 2.661-.595.332-1.55.413-1.744.42H.751a.751.751 0 00-.75.748 11.376 11.376 0 00.692 4.062c.545 1.428 1.355 2.48 2.41 3.124 1.18.723 3.1 1.137 5.275 1.137.983.003 1.963-.086 2.93-.266a12.248 12.248 0 003.823-1.389c.98-.567 1.86-1.288 2.61-2.136 1.252-1.418 1.998-2.997 2.553-4.4h.221c1.372 0 2.215-.549 2.68-1.009.309-.293.55-.65.707-1.046l.098-.288Z"/>
+    </symbol>
+    <marker id="arrow" markerWidth="8" markerHeight="8" refX="7" refY="4" orient="auto">
+      <path d="M0 0L8 4L0 8z" fill="#7B8AA0"/>
+    </marker>
+    <style>
+      .title { font: 700 25px Arial, sans-serif; fill: #172B4D; letter-spacing: 1px; }
+      .subtitle { font: 14px Arial, sans-serif; fill: #5E6C84; }
+      .lane-title { font: 700 13px Arial, sans-serif; fill: #344563; letter-spacing: .7px; }
+      .lane-detail { font: 13px Arial, sans-serif; fill: #5E6C84; }
+      .card-title { font: 700 13px Arial, sans-serif; fill: #253858; letter-spacing: .4px; }
+      .card-body { font: 12px Arial, sans-serif; fill: #5E6C84; }
+      .app-title { font: 700 15px Arial, sans-serif; fill: #253858; }
+      .app-body { font: 12px Arial, sans-serif; fill: #5E6C84; }
+      .small-label { font: 700 10px Arial, sans-serif; fill: #7A869A; letter-spacing: .8px; }
+    </style>
+  </defs>
+
+  <rect width="1500" height="720" fill="#F5F7FA"/>
+  <text x="60" y="48" class="title">ZOMATO ANALYTICS &amp; AI DATA PLATFORM</text>
+  <text x="60" y="74" class="subtitle">Batch ELT, AI-powered review insights, and self-service analytics on Snowflake</text>
+
+  <rect x="60" y="100" width="1380" height="86" rx="12" fill="#FFFFFF" stroke="#D8E0EA"/>
+  <use href="#airflow" x="82" y="124" width="38" height="38"/>
+  <text x="137" y="133" class="lane-title">APACHE AIRFLOW</text>
+  <text x="137" y="157" class="lane-detail">Daily orchestration</text>
+  <line x1="340" y1="120" x2="340" y2="166" stroke="#E1E7EF"/>
+  <text x="370" y="135" class="lane-title">reload_raw</text>
+  <text x="370" y="157" class="lane-detail">Load source files</text>
+  <path d="M510 144h48" stroke="#7B8AA0" stroke-width="1.5" marker-end="url(#arrow)"/>
+  <text x="575" y="135" class="lane-title">dbt_build_core</text>
+  <text x="575" y="157" class="lane-detail">Build core models</text>
+  <path d="M735 144h48" stroke="#7B8AA0" stroke-width="1.5" marker-end="url(#arrow)"/>
+  <text x="800" y="135" class="lane-title">enrich_reviews</text>
+  <text x="800" y="157" class="lane-detail">Classify new reviews</text>
+  <path d="M970 144h48" stroke="#7B8AA0" stroke-width="1.5" marker-end="url(#arrow)"/>
+  <text x="1035" y="135" class="lane-title">dbt_build_ai</text>
+  <text x="1035" y="157" class="lane-detail">Build AI-tagged marts</text>
+  <rect x="1250" y="122" width="160" height="42" rx="8" fill="#F0F6FF"/>
+  <use href="#docker" x="1261" y="130" width="26" height="26"/>
+  <text x="1297" y="139" class="small-label">RUNTIME</text>
+  <text x="1297" y="155" class="card-body">Docker Compose</text>
+
+  <text x="60" y="220" class="small-label">DATA &amp; MODEL FLOW</text>
+
+  <rect x="60" y="238" width="200" height="202" rx="12" fill="#FFFFFF" stroke="#D8E0EA"/>
+  <use href="#snowflake" x="78" y="256" width="30" height="30"/>
+  <text x="118" y="276" class="card-title">SNOWFLAKE</text>
+  <text x="78" y="316" class="card-title">STAGE → RAW</text>
+  <text x="78" y="342" class="card-body">Restaurants</text>
+  <text x="78" y="362" class="card-body">Reviews &amp; users</text>
+  <text x="78" y="382" class="card-body">Orders, menu &amp; food</text>
+  <text x="78" y="414" class="small-label">ZOMATO.RAW</text>
+
+  <path d="M270 338h30" stroke="#7B8AA0" stroke-width="2" marker-end="url(#arrow)"/>
+
+  <rect x="310" y="238" width="200" height="202" rx="12" fill="#FFFFFF" stroke="#D8E0EA"/>
+  <use href="#dbt" x="328" y="256" width="30" height="30"/>
+  <text x="368" y="276" class="card-title">dbt CORE</text>
+  <text x="328" y="316" class="card-title">STAGING + MARTS</text>
+  <text x="328" y="342" class="card-body">Clean staging views</text>
+  <text x="328" y="362" class="card-body">Facts &amp; dimensions</text>
+  <text x="328" y="382" class="card-body">Revenue, SLA, restaurant</text>
+  <text x="328" y="414" class="small-label">ZOMATO.STAGING / MARTS</text>
+
+  <path d="M520 338h30" stroke="#7B8AA0" stroke-width="2" marker-end="url(#arrow)"/>
+
+  <rect x="560" y="238" width="200" height="202" rx="12" fill="#FFFFFF" stroke="#D8E0EA"/>
+  <use href="#openai" x="578" y="256" width="30" height="30"/>
+  <text x="618" y="276" class="card-title">OPENAI</text>
+  <text x="578" y="316" class="card-title">REVIEW ENRICHMENT</text>
+  <text x="578" y="342" class="card-body">Sentiment label &amp; score</text>
+  <text x="578" y="362" class="card-body">Topic classification</text>
+  <text x="578" y="382" class="card-body">Key issue extraction</text>
+  <text x="578" y="414" class="small-label">NEW REVIEWS ONLY</text>
+
+  <path d="M770 338h30" stroke="#7B8AA0" stroke-width="2" marker-end="url(#arrow)"/>
+
+  <rect x="810" y="238" width="200" height="202" rx="12" fill="#FFFFFF" stroke="#D8E0EA"/>
+  <use href="#snowflake" x="828" y="256" width="30" height="30"/>
+  <text x="868" y="276" class="card-title">SNOWFLAKE</text>
+  <text x="828" y="316" class="card-title">AI ENRICHED DATA</text>
+  <text x="828" y="348" class="card-body">REVIEW_ENRICHED</text>
+  <text x="828" y="376" class="card-body">Sentiment • topic</text>
+  <text x="828" y="396" class="card-body">Key issue • model</text>
+  <text x="828" y="418" class="small-label">ZOMATO.AI</text>
+
+  <path d="M1020 338h30" stroke="#7B8AA0" stroke-width="2" marker-end="url(#arrow)"/>
+
+  <rect x="1060" y="238" width="200" height="202" rx="12" fill="#FFFFFF" stroke="#D8E0EA"/>
+  <use href="#dbt" x="1078" y="256" width="30" height="30"/>
+  <text x="1118" y="276" class="card-title">dbt AI MART</text>
+  <text x="1078" y="316" class="card-title">REVIEW INSIGHTS</text>
+  <text x="1078" y="342" class="card-body">Review counts by topic</text>
+  <text x="1078" y="362" class="card-body">Average sentiment &amp; rating</text>
+  <text x="1078" y="382" class="card-body">Flagged issue totals</text>
+  <text x="1078" y="414" class="small-label">MART_REVIEW_INSIGHTS</text>
+
+  <path d="M1270 338h30" stroke="#7B8AA0" stroke-width="2" marker-end="url(#arrow)"/>
+
+  <rect x="1310" y="238" width="130" height="202" rx="12" fill="#FFFFFF" stroke="#D8E0EA"/>
+  <use href="#streamlit" x="1358" y="257" width="34" height="34"/>
+  <text x="1375" y="316" text-anchor="middle" class="card-title">STREAMLIT</text>
+  <text x="1375" y="342" text-anchor="middle" class="card-body">AI-powered</text>
+  <text x="1375" y="362" text-anchor="middle" class="card-body">analytics apps</text>
+  <text x="1375" y="414" text-anchor="middle" class="small-label">EXPLORE</text>
+
+  <text x="60" y="490" class="small-label">ANALYST EXPERIENCES</text>
+  <path d="M410 442v24h60v16" fill="none" stroke="#9AA8B8" stroke-width="1.5" stroke-dasharray="5 4" marker-end="url(#arrow)"/>
+  <path d="M1160 442v24H1030v16" fill="none" stroke="#9AA8B8" stroke-width="1.5" stroke-dasharray="5 4" marker-end="url(#arrow)"/>
+
+  <rect x="220" y="500" width="500" height="148" rx="12" fill="#FFFFFF" stroke="#D8E0EA"/>
+  <use href="#streamlit" x="246" y="522" width="32" height="32"/>
+  <use href="#openai" x="286" y="522" width="32" height="32"/>
+  <text x="334" y="544" class="app-title">Review RAG assistant</text>
+  <text x="246" y="582" class="app-body">Finds similar reviews with embeddings, then answers</text>
+  <text x="246" y="603" class="app-body">questions with the retrieved reviews as context.</text>
+  <text x="246" y="629" class="small-label">STREAMLIT • OPENAI EMBEDDINGS &amp; CHAT</text>
+
+  <rect x="780" y="500" width="500" height="148" rx="12" fill="#FFFFFF" stroke="#D8E0EA"/>
+  <use href="#streamlit" x="806" y="522" width="32" height="32"/>
+  <use href="#openai" x="846" y="522" width="32" height="32"/>
+  <text x="894" y="544" class="app-title">Natural-language analytics</text>
+  <text x="806" y="582" class="app-body">Turns business questions into Snowflake SQL and shows</text>
+  <text x="806" y="603" class="app-body">the query, tabular results, and charts when applicable.</text>
+  <text x="806" y="629" class="small-label">STREAMLIT • OPENAI • SNOWFLAKE MARTS</text>
+
+  <text x="60" y="690" class="small-label">SNOWFLAKE • APACHE AIRFLOW • dbt • OPENAI • STREAMLIT • DOCKER</text>
+</svg>
