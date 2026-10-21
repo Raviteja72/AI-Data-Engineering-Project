@@ -1,10 +1,10 @@
 import os
-import numpy as np
+import json
+
 import pandas as pd
 import streamlit as st
 import snowflake.connector
 from openai import OpenAI
-import json
 from dotenv import load_dotenv
 
 load_dotenv()
@@ -35,7 +35,7 @@ client = OpenAI(api_key=os.getenv("OPENAI_API_KEY"))
 
 SCHEMA = """
 Tables available (Snowflake). Use bare table names, no database or schema prefix.
- 
+
 FCT_ORDERS(order_id, order_date, customer_id, restaurant_id, city, cuisine,
            payment_method, order_status, is_delivered, sales_amount, discount,
            delivery_fee, gst, customer_rating, delivery_time_min)
@@ -46,19 +46,19 @@ MART_RESTAURANT_PERFORMANCE(restaurant_id, restaurant_name, city, cuisine,
                             orders, revenue, avg_customer_rating, cancel_rate)
 MART_DELIVERY_SLA(city, order_hour, delivered_orders, p50_delivery_min, late_rate)
 
- 
+
 Note: gmv means delivered revenue. Prefer the MART_ tables when they fit the question.
 """
 
 SYSTEM_PROMPT = f"""
 You are a Snowflake SQL expert. Write ONE SELECT query that answers the question.
- 
+
 Rules:
 - SELECT queries only, never modify data.
 - Use bare table names (FCT_ORDERS, not ZOMATO.MARTS.FCT_ORDERS).
 - Add a LIMIT of 100 or less, unless the question asks for a single total.
 - Reply as JSON in this exact format: {{"sql": "your query here"}}
- 
+
 {SCHEMA}
 """
 

@@ -40,12 +40,17 @@ with DAG(
 
     enrich_reviews = BashOperator(
         task_id="enrich_reviews",
-        bash_command=f"python /opt/airflow/ai/enrich_reviews.py",
+        bash_command="python /opt/airflow/ai/enrich_reviews.py",
     )
 
     dbt_build_ai = BashOperator(
         task_id="dbt_build_ai",
-        bash_command=f"{DBT} build --select tag:ai --project-dir {DBT_PROJECT} --profiles-dir {DBT_PROJECT}",
+        bash_command=" ".join(
+            (
+                f"{DBT} build --select tag:ai --project-dir {DBT_PROJECT}",
+                f"--profiles-dir {DBT_PROJECT}",
+            )
+        ),
     )
 
     reload_raw >> dbt_build_core >> enrich_reviews >> dbt_build_ai
